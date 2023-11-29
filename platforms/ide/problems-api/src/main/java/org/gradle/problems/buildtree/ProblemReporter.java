@@ -26,6 +26,7 @@ import java.util.function.Consumer;
  * A service that collects problems of some type during the execution of Gradle for a build tree and reports them to the user
  * in some form.
  */
+
 @ServiceScope(Scopes.BuildTree.class)
 public interface ProblemReporter {
     /**

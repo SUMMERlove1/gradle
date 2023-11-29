@@ -55,7 +55,7 @@ public class ProblemReportingBuildActionRunner implements BuildActionRunner {
 
     private List<Throwable> reportProblems(File rootProjectBuildDir) {
         List<Throwable> failures = new ArrayList<>();
-        Consumer<Throwable> collector = failure -> failures.add(exceptionAnalyser.transform(failure));
+        Consumer<? super Throwable> collector = failure -> failures.add(exceptionAnalyser.transform(failure));
         for (ProblemReporter reporter : reporters) {
             try {
                 reporter.report(rootProjectBuildDir, collector);
