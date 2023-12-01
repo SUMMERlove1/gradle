@@ -65,8 +65,6 @@ public interface FileOperations {
 
     FileTree zipTree(Object zipPath);
 
-    FileTree zipTreeNoLocking(Object zipPath);
-
     FileTree tarTree(Object tarPath);
 
     CopySpec copySpec();
