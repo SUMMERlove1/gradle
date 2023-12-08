@@ -33,6 +33,7 @@ import static org.gradle.internal.hash.HashCode.Usage.SAFE_TO_REUSE_BYTES;
 
 /**
  * Some popular hash functions. Replacement for Guava's hashing utilities.
+ * <p>
  * Inspired by the Google Guava project – https://github.com/google/guava.
  */
 public class Hashing {
@@ -284,18 +285,21 @@ public class Hashing {
         }
 
         @Override
-        public void putByte(byte b) {
+        public PrimitiveHasher putByte(byte b) {
             getDigest().update(b);
+            return this;
         }
 
         @Override
-        public void putBytes(byte[] bytes) {
+        public PrimitiveHasher putBytes(byte[] bytes) {
             getDigest().update(bytes);
+            return this;
         }
 
         @Override
-        public void putBytes(byte[] bytes, int off, int len) {
+        public PrimitiveHasher putBytes(byte[] bytes, int off, int len) {
             getDigest().update(bytes, off, len);
+            return this;
         }
 
         private void update(int length) {
@@ -313,36 +317,42 @@ public class Hashing {
         }
 
         @Override
-        public void putInt(int value) {
+        public PrimitiveHasher putInt(int value) {
             buffer.putInt(value);
             update(4);
+            return this;
         }
 
         @Override
-        public void putLong(long value) {
+        public PrimitiveHasher putLong(long value) {
             buffer.putLong(value);
             update(8);
+            return this;
         }
 
         @Override
-        public void putDouble(double value) {
+        public PrimitiveHasher putDouble(double value) {
             long longValue = Double.doubleToRawLongBits(value);
             putLong(longValue);
+            return this;
         }
 
         @Override
-        public void putBoolean(boolean value) {
+        public PrimitiveHasher putBoolean(boolean value) {
             putByte((byte) (value ? 1 : 0));
+            return this;
         }
 
         @Override
-        public void putString(CharSequence value) {
+        public PrimitiveHasher putString(CharSequence value) {
             putBytes(value.toString().getBytes(Charsets.UTF_8));
+            return this;
         }
 
         @Override
-        public void putHash(HashCode hashCode) {
+        public PrimitiveHasher putHash(HashCode hashCode) {
             hashCode.appendToHasher(this);
+            return this;
         }
 
         @Override
