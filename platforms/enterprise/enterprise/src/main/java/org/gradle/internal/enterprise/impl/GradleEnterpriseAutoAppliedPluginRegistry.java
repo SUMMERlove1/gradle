@@ -70,7 +70,24 @@ public class GradleEnterpriseAutoAppliedPluginRegistry implements AutoAppliedPlu
             getScriptDisplayName(),
             artifact,
             null,
-            AUTO_APPLIED
+            AUTO_APPLIED,
+            develocityPluginRequest()
+        );
+    }
+
+    private static PluginRequestInternal develocityPluginRequest() {
+        ModuleIdentifier moduleIdentifier = DefaultModuleIdentifier.newId(AutoAppliedGradleEnterprisePlugin.GROUP, AutoAppliedGradleEnterprisePlugin.DEVELOCITY_PLUGIN_ARTIFACT_NAME);
+        ModuleVersionSelector artifact = DefaultModuleVersionSelector.newSelector(moduleIdentifier, AutoAppliedGradleEnterprisePlugin.VERSION);
+        return new DefaultPluginRequest(
+            AutoAppliedGradleEnterprisePlugin.DEVELOCITY_PLUGIN_ID,
+            AutoAppliedGradleEnterprisePlugin.VERSION,
+            false,
+            null,
+            getScriptDisplayName(),
+            artifact,
+            null,
+            AUTO_APPLIED,
+            null
         );
     }
 
