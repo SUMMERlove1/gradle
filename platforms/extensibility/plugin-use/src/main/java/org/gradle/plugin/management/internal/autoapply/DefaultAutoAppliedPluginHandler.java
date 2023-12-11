@@ -24,10 +24,13 @@ import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.ScriptHandler;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
+import org.gradle.api.internal.artifacts.DefaultModuleVersionSelector;
 import org.gradle.api.plugins.PluginContainer;
+import org.gradle.plugin.management.internal.DefaultPluginRequest;
 import org.gradle.plugin.management.internal.PluginRequestInternal;
 import org.gradle.plugin.management.internal.PluginRequests;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -67,7 +70,16 @@ public class DefaultAutoAppliedPluginHandler implements AutoAppliedPluginHandler
     }
 
     private static PluginRequests filterAlreadyAppliedOrRequested(PluginRequests autoAppliedPlugins, final PluginRequests initialRequests, final PluginContainer pluginContainer, final ScriptHandler scriptHandler) {
-        return PluginRequests.of(ImmutableList.copyOf(StreamSupport.stream(autoAppliedPlugins.spliterator(), false).filter(autoAppliedPlugin -> !isAlreadyAppliedOrRequested(autoAppliedPlugin, initialRequests, pluginContainer, scriptHandler)).collect(Collectors.toList())));
+        return PluginRequests.of(ImmutableList.copyOf(StreamSupport.stream(autoAppliedPlugins.spliterator(), false)
+            .filter(autoAppliedPlugin -> {
+                boolean isAlreadyAppliedOrRequested = isAlreadyAppliedOrRequested(autoAppliedPlugin, initialRequests, pluginContainer, scriptHandler);
+                return alternativeCoordinates(autoAppliedPlugin)
+                    .map(alternativeCoordinates -> isAlreadyAppliedOrRequested(alternativeCoordinates, initialRequests, pluginContainer, scriptHandler))
+                    .map(isAlternativeVersionAlreadyAppliedOrRequested -> !isAlreadyAppliedOrRequested && !isAlternativeVersionAlreadyAppliedOrRequested)
+                    .orElse(!isAlreadyAppliedOrRequested);
+            })
+            .collect(Collectors.toList())
+        ));
     }
 
     private static boolean isAlreadyAppliedOrRequested(PluginRequestInternal autoAppliedPlugin, PluginRequests requests, PluginContainer pluginContainer, ScriptHandler scriptHandler) {
@@ -103,5 +115,22 @@ public class DefaultAutoAppliedPluginHandler implements AutoAppliedPluginHandler
 
     private static boolean hasMatchingCoordinates(Dependency dependency, ModuleIdentifier module) {
         return module.getGroup().equals(dependency.getGroup()) && module.getName().equals(dependency.getName());
+    }
+
+    private static Optional<PluginRequestInternal> alternativeCoordinates(PluginRequestInternal plugin) {
+        if (AutoAppliedGradleEnterprisePlugin.ID.equals(plugin.getId())) {
+            ModuleIdentifier moduleIdentifier = DefaultModuleIdentifier.newId(AutoAppliedGradleEnterprisePlugin.GROUP, AutoAppliedGradleEnterprisePlugin.DEVELOCITY_PLUGIN_ARTIFACT_NAME);
+            ModuleVersionSelector artifact = DefaultModuleVersionSelector.newSelector(moduleIdentifier, AutoAppliedGradleEnterprisePlugin.VERSION);
+            return Optional.of(new DefaultPluginRequest(
+                AutoAppliedGradleEnterprisePlugin.DEVELOCITY_PLUGIN_ID,
+                AutoAppliedGradleEnterprisePlugin.VERSION,
+                false,
+                null,
+                plugin.getScriptDisplayName(),
+                artifact
+            ));
+        }
+
+        return Optional.empty();
     }
 }
