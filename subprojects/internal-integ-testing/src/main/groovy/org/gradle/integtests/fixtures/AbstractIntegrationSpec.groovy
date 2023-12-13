@@ -80,7 +80,7 @@ abstract class AbstractIntegrationSpec extends Specification {
     private boolean ignoreCleanupAssertions
 
     private boolean enableProblemsApiCheck = false
-    private BuildOperationsFixture buildOperationsFixture = null
+    private BuildOperationsFixture buildOperationsFixture
 
     GradleExecuter getExecuter() {
         if (executor == null) {
@@ -122,9 +122,44 @@ abstract class AbstractIntegrationSpec extends Specification {
                 withArgument("-Dorg.gradle.internal.network.retry.max.attempts=$maxUploadAttempts")
             }
         }
+        buildOperationsFixture = new BuildOperationsFixture(executer, temporaryFolder) // TODO restore the original behavior (i.e. only create the fixture where problems api checks are enabled)
     }
 
+    private static final def KNOWN_CATEGORIES = [
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "missing-annotation"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "cannot-use-optional-on-primitive-types"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "mutable-type-with-setter"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "private-getter-must-not-be-annotated"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "ignored-property-must-not-be-annotated"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "conflicting-annotations"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "annotation-invalid-in-context"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "missing-normalization-annotation"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "annotation-invalid-in-context"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "incompatible-annotations"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "unsupported-value-type"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "incorrect-use-of-input-annotation"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "nested-map-unsupported-key-type"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["property", "nested-type-unsupported"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["type", "invalid-use-of-type-annotation"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["type", "ignored-annotations-on-method"]],
+        [namespace: "org.gradle", category: "validation", subCategories: ["type", "not-cacheable-without-reason"]],
+        [namespace: "org.gradle", category: "deprecation", subCategories: ["user-code-direct"]]
+    ]
+
     def cleanup() {
+        collectedProblems.each {
+            def cat = it.details['problemCategory']
+            if (cat == null || cat['category'] == null | cat['namespace'] == null || cat['subCategories'] == null) {
+                throw new RuntimeException("Invalid problem category:$cat")
+            }
+
+            if (!KNOWN_CATEGORIES.contains(cat)) {
+                List sc = cat['subCategories'] as List
+                throw new RuntimeException("Unknown problem category ${cat}. \n" +
+                    "Add this to KNOWN_CATEGORIES: [namespace: \"${cat['namespace']}\", category: \"${cat['category']}\", subCategories: [${if(!sc.empty)'"'}${sc.join('", "')}${if (!sc.empty) '"'}]],")
+            }
+        }
+
         buildOperationsFixture = null
         disableProblemsApiCheck()
 
@@ -747,7 +782,6 @@ tmpdir is currently ${System.getProperty("java.io.tmpdir")}""")
 
     def enableProblemsApiCheck() {
         enableProblemsApiCheck = true
-        buildOperationsFixture = new BuildOperationsFixture(executer, temporaryFolder)
     }
 
     def disableProblemsApiCheck() {
@@ -755,9 +789,10 @@ tmpdir is currently ${System.getProperty("java.io.tmpdir")}""")
     }
 
     List<ReceivedProblem> getCollectedProblems() {
-        if (!enableProblemsApiCheck) {
-            throw new IllegalStateException('Problems API check is not enabled')
-        }
+        // TODO (donat) also restore this check
+//        if (!enableProblemsApiCheck) {
+//            throw new IllegalStateException('Problems API check is not enabled')
+//        }
         return buildOperationsFixture.all().collectMany {operation ->
             operation.progress(DefaultProblemProgressDetails.class).collect {
                 def problemDetails = it.details.get("problem") as Map<String, Object>
