@@ -96,11 +96,7 @@ abstract class ProjectStateStore<K, V>(
     fun loadOrCreateValue(key: K, creator: () -> V): V {
         val addressOfCached = locateCachedValue(key)
         if (addressOfCached != null) {
-            try {
-                return valuesStore.read(addressOfCached)
-            } catch (e: Exception) {
-                throw RuntimeException("Could not load entry for $key", e)
-            }
+            return readValue(key, addressOfCached)
         }
         // TODO - should protect from concurrent creation
         val value = creator()
@@ -120,6 +116,15 @@ abstract class ProjectStateStore<K, V>(
             currentValues[key] = cachedInPrevious
         }
         return cachedInPrevious
+    }
+
+    private
+    fun readValue(key: K, addressOfCached: BlockAddress): V {
+        try {
+            return valuesStore.read(addressOfCached)
+        } catch (e: Exception) {
+            throw RuntimeException("Could not load entry for $key", e)
+        }
     }
 
     override fun close() {
