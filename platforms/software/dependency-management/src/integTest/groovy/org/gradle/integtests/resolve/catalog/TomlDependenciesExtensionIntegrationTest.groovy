@@ -766,7 +766,7 @@ lib = {group = "org.gradle.test", name="lib", version.ref="commons-lib"}
         def problems = collectedProblems
         problems.size() == 1
         def problem = problems[0]
-        problem["locations"][0].path == tomlFile.absolutePath
+        problem.details["locations"][0].path == tomlFile.absolutePath
     }
 
     @VersionCatalogProblemTestFor([
@@ -795,8 +795,8 @@ key2=
         def problems = collectedProblems
         problems.size() == 1
         def problem = problems[0]
-        problem["locations"][0].path == tomlFile.absolutePath
-        problem["locations"][1].path == tomlFile.absolutePath
+        problem.details["locations"][0].path == tomlFile.absolutePath
+        problem.details["locations"][1].path == tomlFile.absolutePath
     }
 
     private String getUnexpectedErrorString(int line, int column) {

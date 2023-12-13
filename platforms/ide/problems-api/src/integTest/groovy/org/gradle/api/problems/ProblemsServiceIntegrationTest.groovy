@@ -56,10 +56,11 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         then:
         def problems = this.collectedProblems
         problems.size() == 1
-        problems[0]["label"] == "label"
-        problems[0]["problemCategory"]["category"] == "type"
-        problems[0]["locations"][0] == [length:-1, column:-1, line:14, path: "build file '$buildFile.absolutePath'"]
-        problems[0]["locations"][1] == [
+        def problem = problems[0]
+        problem.details["label"] == "label"
+        problem.details["problemCategory"]["category"] == "type"
+        problem.details["locations"][0] == [length:-1, column:-1, line:14, path: "build file '$buildFile.absolutePath'"]
+        problem.details["locations"][1] == [
             buildTreePath: ":reportProblem"
         ]
     }
@@ -90,9 +91,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        def link = this.collectedProblems[0]["documentationLink"]
-        link["url"] == 'https://example.org/doc'
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["documentationLink"]["url"] == 'https://example.org/doc'
     }
 
     def "can emit a problem with upgrade-guide documentation"() {
@@ -122,9 +124,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        def link = this.collectedProblems[0]["documentationLink"]
-        link["url"] == 'https://docs.example.org/test-section'
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["documentationLink"]["url"] == 'https://docs.example.org/test-section'
     }
 
     def "can emit a problem with dsl-reference documentation"() {
@@ -154,9 +157,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        def link = this.collectedProblems[0]["documentationLink"]
-        link["url"] == 'https://example.org/doc'
+        def problems = collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["documentationLink"]["url"] == 'https://example.org/doc'
     }
 
     def "can emit a problem with partially specified location"() {
@@ -185,8 +189,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["locations"][0] == [
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["locations"][0] == [
             "path": "test-location",
             "offset": 1,
             "length": 2
@@ -219,17 +225,18 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
 
-        def problems = this.collectedProblems
         then:
+        def problems = this.collectedProblems
         problems.size() == 1
-        problems[0]["locations"][0] == [
+        def problem = problems[0]
+        problem.details["locations"][0] == [
             "path": "test-location",
             "offset": 1,
             "length": 2
         ]
-
-        def taskPath = problems[0]["locations"][1]
-        taskPath["buildTreePath"] == ":reportProblem"
+        problem.details["locations"][1] == [
+            "buildTreePath": ":reportProblem"
+        ]
     }
 
     def "can emit a problem with plugin location specified"() {
@@ -258,10 +265,11 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        def problem = this.collectedProblems[0]
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
 
-        def fileLocation = problem["locations"][0]
+        def fileLocation = problem.details["locations"][0]
         fileLocation["pluginId"] == "org.example.pluginid"
     }
 
@@ -292,8 +300,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["severity"] == severity.name()
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["severity"] == severity.name()
 
         where:
         severity << Severity.values()
@@ -326,8 +336,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["solutions"] == [
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["solutions"] == [
             "solution"
         ]
     }
@@ -359,9 +371,11 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["exception"]["message"] == "test"
-        !(this.collectedProblems[0]["exception"]["stackTrace"] as List<String>).isEmpty()
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["exception"]["message"] == "test"
+        !(problem.details["exception"]["stackTrace"] as List<String>).isEmpty()
     }
 
     def "can emit a problem with additional data"() {
@@ -391,8 +405,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         run("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["additionalData"] == [
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["additionalData"] == [
             "key": "value"
         ]
     }
@@ -453,8 +469,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         fails("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["exception"]["message"] == "test"
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["exception"]["message"] == "test"
     }
 
     def "can rethrow a problem with a wrapper exception"() {
@@ -479,8 +497,10 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         fails("reportProblem")
 
         then:
-        this.collectedProblems.size() == 1
-        this.collectedProblems[0]["exception"]["message"] == "test"
+        def problems = this.collectedProblems
+        problems.size() == 1
+        def problem = problems[0]
+        problem.details["exception"]["message"] == "test"
     }
 
     def "can rethrow a problem with a wrapper exception"() {
@@ -513,8 +533,9 @@ class ProblemsServiceIntegrationTest extends AbstractIntegrationSpec {
         fails("reportProblem")
 
         then:
-        this.collectedProblems.size() == 2
-        this.collectedProblems[0]["label"] == "inner"
-        this.collectedProblems[1]["label"] == "outer"
+        def problems = this.collectedProblems
+        problems.size() == 2
+        problems[0].details["label"] == "inner"
+        problems[1].details["label"] == "outer"
     }
 }

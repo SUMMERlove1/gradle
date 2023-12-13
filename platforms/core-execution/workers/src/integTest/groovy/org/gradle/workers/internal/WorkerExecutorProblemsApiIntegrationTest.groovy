@@ -128,7 +128,7 @@ class WorkerExecutorProblemsApiIntegrationTest extends AbstractIntegrationSpec {
         then:
         collectedProblems.size() == 1
         def problem = collectedProblems[0]
-        problem.operationId == Long.parseLong(buildOperationIdFile.text)
+        problem.get == Long.parseLong(buildOperationIdFile.text)
 
         where:
         isolationMode << WorkerExecutorFixture.ISOLATION_MODES
