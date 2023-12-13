@@ -126,10 +126,22 @@ class ConfigurationCacheReport(
                 executor.submit {
                     writer.writeDiagnostic(
                         kind,
-                        problem
+                        problem.exception?.let { hashedProblemFor(problem, it) } ?: problem
                     )
                 }
                 return this
+            }
+
+            private fun hashedProblemFor(problem: PropertyProblem, ex: Throwable): PropertyProblem {
+                val hash = hashWithoutMessage(ex)
+                return problem.prependMessageFragment(hash)
+            }
+
+            private fun hashWithoutMessage(ex: Throwable): String {
+                val input = ex.stackTraceToString()
+                    .lines().dropWhile { !it.trim().startsWith("at ") }
+                    .joinToString("\n")
+                return Hashing.hashString(input).toCompactString()
             }
 
             override fun commitReportTo(outputDirectory: File, cacheAction: String, requestedTasks: String, totalProblemCount: Int): Pair<State, File?> {
@@ -247,4 +259,8 @@ class ConfigurationCacheReport(
             state = state.f()
         }
     }
+}
+
+private fun PropertyProblem.prependMessageFragment(hash: String): PropertyProblem {
+    return copy(message = message.copy(fragments = listOf(StructuredMessage.Fragment.Text("#$hash: ")) + message.fragments))
 }
