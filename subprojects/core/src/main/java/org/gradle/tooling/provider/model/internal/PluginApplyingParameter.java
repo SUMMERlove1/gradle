@@ -14,27 +14,13 @@
  * limitations under the License.
  */
 
-package org.gradle.api.problems;
+package org.gradle.tooling.provider.model.internal;
 
-import org.gradle.api.Incubating;
+import org.gradle.api.NonNullApi;
 
-import java.io.Serializable;
+@NonNullApi
+public interface PluginApplyingParameter {
 
-/**
- * Represents a location information of a problem.
- *
- * @since 8.6
- */
-@Incubating
-public interface ProblemLocation extends Serializable {
+    Class<?> getPluginType();
 
-    /**
-     * Returns an identifier of the location type.
-     * <p>
-     * As locations will be serialized into a JSON format,
-     * this identifier is used to distinguish between different location types.
-     *
-     * @since 8.6
-     */
-    String getType();
 }
