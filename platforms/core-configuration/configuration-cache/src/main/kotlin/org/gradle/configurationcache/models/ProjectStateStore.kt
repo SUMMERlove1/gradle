@@ -21,12 +21,15 @@ import org.gradle.cache.internal.streams.ValueStore
 import org.gradle.configurationcache.CheckedFingerprint
 import org.gradle.configurationcache.ConfigurationCacheStateStore
 import org.gradle.configurationcache.StateType
+import org.gradle.internal.Describables
+import org.gradle.internal.DisplayName
 import org.gradle.internal.concurrent.CompositeStoppable
+import org.gradle.internal.model.CalculatedValueContainer
+import org.gradle.internal.model.CalculatedValueContainerFactory
 import org.gradle.internal.serialize.Decoder
 import org.gradle.internal.serialize.Encoder
 import org.gradle.util.Path
 import java.io.Closeable
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
 
@@ -37,7 +40,9 @@ import java.util.function.Consumer
 internal
 abstract class ProjectStateStore<K, V>(
     private val store: ConfigurationCacheStateStore,
-    private val stateType: StateType
+    private val stateType: StateType,
+    private val valueDescription: String,
+    private val calculatedValueContainerFactory: CalculatedValueContainerFactory
 ) : Closeable {
 
     private
@@ -55,7 +60,7 @@ abstract class ProjectStateStore<K, V>(
     val previousValues = ConcurrentHashMap<K, BlockAddress>()
 
     private
-    val currentValues = ConcurrentHashMap<K, BlockAddress>()
+    val currentValues = ConcurrentHashMap<K, CalculatedValueContainer<BlockAddress, *>>()
 
     protected
     abstract fun projectPathForKey(key: K): Path?
@@ -69,7 +74,8 @@ abstract class ProjectStateStore<K, V>(
     /**
      * Collects all values used during execution
      */
-    fun collectAccessedValues(): Map<K, BlockAddress> = Collections.unmodifiableMap(currentValues)
+    fun collectAccessedValues(): Map<K, BlockAddress> =
+        currentValues.mapValues { it.value.get() }
 
     fun restoreFromCacheEntry(entryDetails: Map<K, BlockAddress>, checkedFingerprint: CheckedFingerprint.ProjectsInvalid) {
         for (entry in entryDetails) {
@@ -94,28 +100,32 @@ abstract class ProjectStateStore<K, V>(
     }
 
     fun loadOrCreateValue(key: K, creator: () -> V): V {
-        val addressOfCached = locateCachedValue(key)
-        if (addressOfCached != null) {
-            return readValue(key, addressOfCached)
+        val valueContainer = currentValues.computeIfAbsent(key) { k ->
+            calculatedValueContainerFactory.create<BlockAddress>(displayNameFor(k)) {
+                loadPreviousOrCreateValue(k, creator)
+            }
         }
-        // TODO - should protect from concurrent creation
-        val value = creator()
-        val address = valuesStore.write(value)
-        currentValues[key] = address
-        return value
+
+        // Calculate the value after adding the entry to the map, so that the value container can take care of thread synchronization
+        valueContainer.finalizeIfNotAlready()
+        val address = valueContainer.get()
+        return readValue(key, address)
     }
 
-    private
-    fun locateCachedValue(key: K): BlockAddress? {
-        val cachedInCurrent = currentValues[key]
-        if (cachedInCurrent != null) {
-            return cachedInCurrent
+    private fun loadPreviousOrCreateValue(key: K, creator: () -> V): BlockAddress {
+        previousValues[key]?.let { previouslyCached ->
+            return previouslyCached
         }
-        val cachedInPrevious = previousValues[key]
-        if (cachedInPrevious != null) {
-            currentValues[key] = cachedInPrevious
-        }
-        return cachedInPrevious
+
+        val value = creator()
+        val address = valuesStore.write(value)
+        // discarding the value to get granular load-after-store behavior
+        return address
+    }
+
+    private fun displayNameFor(key: K): DisplayName {
+        val unitDescription = projectPathForKey(key)?.let { "for project $it" } ?: "for build"
+        return Describables.of(valueDescription, unitDescription)
     }
 
     private

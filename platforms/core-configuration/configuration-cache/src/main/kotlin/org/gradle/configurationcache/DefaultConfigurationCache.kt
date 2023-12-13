@@ -44,6 +44,7 @@ import org.gradle.internal.component.local.model.LocalComponentGraphResolveState
 import org.gradle.internal.concurrent.CompositeStoppable
 import org.gradle.internal.concurrent.Stoppable
 import org.gradle.internal.configuration.inputs.InstrumentedInputs
+import org.gradle.internal.model.CalculatedValueContainerFactory
 import org.gradle.internal.operations.BuildOperationExecutor
 import org.gradle.internal.vfs.FileSystemAccess
 import org.gradle.internal.watch.vfs.BuildLifecycleAwareVirtualFileSystem
@@ -72,7 +73,8 @@ class DefaultConfigurationCache internal constructor(
      * Force the [FileSystemAccess] service to be initialized as it initializes important static state.
      */
     @Suppress("unused")
-    private val fileSystemAccess: FileSystemAccess
+    private val fileSystemAccess: FileSystemAccess,
+    private val calculatedValueContainerFactory: CalculatedValueContainerFactory
 ) : BuildTreeConfigurationCache, Stoppable {
 
     interface Host {
@@ -102,10 +104,10 @@ class DefaultConfigurationCache internal constructor(
     val store by lazy { cacheRepository.forKey(cacheKey.string) }
 
     private
-    val intermediateModels = lazy { IntermediateModelController(host, cacheIO, store, cacheFingerprintController) }
+    val intermediateModels = lazy { IntermediateModelController(host, cacheIO, store, calculatedValueContainerFactory, cacheFingerprintController) }
 
     private
-    val projectMetadata = lazy { ProjectMetadataController(host, cacheIO, resolveStateFactory, store) }
+    val projectMetadata = lazy { ProjectMetadataController(host, cacheIO, resolveStateFactory, store, calculatedValueContainerFactory) }
 
     private
     val cacheIO by lazy { host.service<ConfigurationCacheIO>() }
