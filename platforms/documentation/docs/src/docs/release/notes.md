@@ -63,6 +63,18 @@ A new [`named(Spec<String>)` method](javadoc/org/gradle/api/NamedDomainObjectCol
 [`ModuleDependencyCapabilitiesHandler#requireCapability(Object)`](javadoc/org/gradle/api/artifacts/ModuleDependencyCapabilitiesHandler.html#requireCapability-java.lang.Object-),
 and [`CapabilitiesResolution#withCapability(Object, Action)`](javadoc/org/gradle/api/artifacts/CapabilitiesResolution.html#withCapability-java.lang.Object-org.gradle.api.Action-).
 
+### Problems API
+
+Gradle now has a new incubating API that allows for reporting and consuming problems occurring during a build.
+
+The [`Problems`](javadoc/org/gradle/api/problems/Problems.html) service can be used to describe and emit problems with details (description, location information, link to documentation etc).
+Reported problems are then exposed via the Tooling API, allowing Gradle IDE providers - for example, IntelliJ IDEA, Visual Studio Code, Eclipse - to integrate problem details in the UI.
+The reported problems carry location information therefore IDEs can easily integrate them into the developer experience, providing error markers, problem view, and more.
+
+Gradle already emits problems from many components, including (but not limited to) deprecation warnings, dependency version catalog errors, task validation errors, and Java toolchain problems.
+
+The current release focuses on the IDE, however users can expect problem reports appearing in the console in future releases.
+
 ### Error and warning reporting improvements
 
 Gradle provides a rich set of error and warning messages to help you understand and resolve problems in your build.
