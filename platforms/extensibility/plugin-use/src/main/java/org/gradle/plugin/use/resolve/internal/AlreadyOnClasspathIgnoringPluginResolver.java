@@ -18,8 +18,8 @@ package org.gradle.plugin.use.resolve.internal;
 
 import org.gradle.api.NonNullApi;
 import org.gradle.api.internal.plugins.PluginDescriptorLocator;
+import org.gradle.plugin.management.internal.PluginCoordinates;
 import org.gradle.plugin.management.internal.PluginRequestInternal;
-import org.gradle.plugin.use.PluginId;
 
 @NonNullApi
 public class AlreadyOnClasspathIgnoringPluginResolver implements PluginResolver {
@@ -36,16 +36,22 @@ public class AlreadyOnClasspathIgnoringPluginResolver implements PluginResolver 
 
     @Override
     public void resolve(PluginRequestInternal pluginRequest, PluginResolutionResult result) {
-        PluginId pluginId = pluginRequest.getId();
-        if (!isPresentOnClasspath(pluginId)) {
-            delegate.resolve(pluginRequest, result);
+        if (!isPresentOnClasspath(PluginCoordinates.from(pluginRequest))) {
+            boolean isAlternativePresentOnClasspath = pluginRequest.getAlternativeCoordinates()
+                .map(this::isPresentOnClasspath)
+                .orElse(false);
+            if (isAlternativePresentOnClasspath) {
+                result.alreadyApplied();
+            } else {
+                delegate.resolve(pluginRequest, result);
+            }
         } else {
             result.alreadyApplied();
         }
     }
 
-    private boolean isPresentOnClasspath(PluginId pluginId) {
-        return pluginDescriptorLocator.findPluginDescriptor(pluginId.toString()) != null;
+    private boolean isPresentOnClasspath(PluginCoordinates pluginCoordinates) {
+        return pluginDescriptorLocator.findPluginDescriptor(pluginCoordinates.getId().toString()) != null;
     }
 
 }
