@@ -34,7 +34,7 @@ public interface PluginRequestInternal extends PluginRequest {
 
     Origin getOrigin();
 
-    Optional<PluginRequestInternal> getAlternativeCoordinates();
+    Optional<PluginCoordinates> getAlternativeCoordinates();
 
     enum Origin {
         AUTO_APPLIED,

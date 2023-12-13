@@ -35,7 +35,7 @@ public class DefaultPluginRequest implements PluginRequestInternal {
     private final ModuleVersionSelector artifact;
     private final PluginRequest originalRequest;
     private final Origin origin;
-    private final PluginRequestInternal alternativeCoordinates;
+    private final PluginCoordinates alternativeCoordinates;
 
     public DefaultPluginRequest(PluginId id, String version, boolean apply, Integer lineNumber, ScriptSource scriptSource) {
         this(id, version, apply, lineNumber, scriptSource.getDisplayName(), null);
@@ -58,7 +58,7 @@ public class DefaultPluginRequest implements PluginRequestInternal {
         ModuleVersionSelector artifact,
         PluginRequest originalRequest,
         Origin origin,
-        PluginRequestInternal alternativeCoordinates
+        PluginCoordinates alternativeCoordinates
     ) {
         this.id = id;
         this.version = version;
@@ -136,7 +136,7 @@ public class DefaultPluginRequest implements PluginRequestInternal {
     }
 
     @Override
-    public Optional<PluginRequestInternal> getAlternativeCoordinates() {
+    public Optional<PluginCoordinates> getAlternativeCoordinates() {
         return Optional.ofNullable(alternativeCoordinates);
     }
 }
